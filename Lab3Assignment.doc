@@ -1,0 +1,59 @@
+Programming Assignment
+
+Lab 3: Design A Standardized Client-Server Application
+
+Lab must meet two key requirements: 
+1) your client must interoperate/work with  any (working) server of other classmates, and 
+2) your server must interoperate/work with any (working) client of other classmates.
+	
+Languages: you must use C/C++ AND any other language of your choice for the server or the client.  Your code must ultimately compile and execute on engineering machines. 
+Example: you can implement the client in C and the server in a language of your choice.
+
+Datagram socket programming 
+	The objective is to design a proxy DNS server over UDP. If the client sends a list of hostnames, the server will send back the list of IP addresses corresponding to the hostnames. Note that a hostname may have multiple addresses. If a hostname has multiple IP addresses, the server will return all IP addresses for that hostname. We assume that the Internet can corrupt datagrams. Each group must design and implement one server and one client over UDP:
+a)	Client : Write a datagram client (UDPClient.XXX where the extension XXX could be c, cc, java, or any language extension) which:
+i.	Accepts as command line of the form: UDPClient Servername Port# requestID n1 n2 ..nm where 
+1.	UDPClient is your executable, 
+2.	Servername is the server name,
+3.	 port# is a port number,  
+4.	RequestID  is a request ID from 0 to 127, and 
+5.	ni  is a host name.
+ii.	forms a message/datagram that contains the request ID RequestID and  the list of hostnames ni.
+iii.	Sends a UDP datagram containing the formed message to the server with name Servername on port number Port#  and waits for a response
+iv.	If the client receives a VALID response, it prints it out the response: one hostname and its IP address per line.
+v.	If the client receives a corrupted response or a response too short then it must drop it and jumps to iii (Limit the number of trials to 7).
+
+PROTOCOL: The message will contain a length field (2 bytes), a checksum field (one byte), a group ID GID (one byte), a request ID (one byte), a delimiter ~ (one byte), and a list of hostnames separated by delimiter ~.  The format of the message must be as following:
+1)	Length:  Length is stored on two bytes (Byte0, Byte1). Length is the number of bytes making the packet (including the length field).
+Checksum:  Checksum is stored on the THIRD byte (Byte2). Checksum is computed as follows: consider the message an array of bytes. The checksum must be computed as an 8 bit Internet checksum (See page 212, first paragraph). Let S be the ONE BYTE sum of these numbers. Checksum is the bitwise complement of S. 
+
+IT IS CRITICAL that all groups compute correctly (and the same way) the checksum. Otherwise, a receiver from a different group will reject your messages.
+
+1)	  GID: GID is the group ID of the group who sends the request. It is stored on one byte (Byte3).
+2)	RequestID: RequestID is stored on the fifth byte (Byte4).
+3)	delimiter ‘~’ coded using ASCII (126 or 0x7E) (Byte5)
+4)	the hostname ni (starting with n1) must be stored as a string of characters  using ASCI (8 bits) . [Byte6][….][Byte(6+ strlen(n1)-1)
+5)	delimiter ‘~’ coded using ASCII (126 or 0x7E) if there is another hostname. In other words, do not put a delimiter after the last hostname.
+6)	Jump to 5) to repeat for all hostnames n2, n3…. 
+
+Now…the Server
+
+b)	Server: Write a datagram DNS-Proxy server (UDPServer.XXX) running on port (10010+GID). The server must accept a command line of the form: UDPServer Port# where:
+i.	UDPServer is your executable
+ii.	Port# is a port number. While developing your code, Port# must be set to 10010+GID. 
+When the server receives a request, it checks whether the request is VALID. If the request is not valid because of the checksum, the server must return a message with the header (Checksum, GID, RequestID) followed by 2 bytes set each to 0x00. If the request is not valid because it is too short/lomgth (length mistmach), the server must return a message with the header (Checksum, 127, 127) followed by 2 bytes set each to 0x00. If the message is a VALID request, the server must resolve the IP address for each hostname and send back a message that contains: 
+1)	Length (lg):  Length is stored on two bytes (Byte0, Byte1). Length is the number of bytes making the packet (including the length field)
+Checksum (Cs):  Checksum is stored on the third byte (Byte2). The checksum must be computed as an 8 bit Internet checksum (See page 212, first paragraph). Let S be the ONE BYTE sum of these numbers. Checksum is the bitwise complement of S. 
+
+IT IS CRITICAL that all groups compute correctly (and the same way) the checksum. Otherwise, a receiver from a different group will reject your messages.
+2)	  GID: GID is the group ID of the group owner of the server. It is stored on one byte (Byte3).
+3)	RequestID (RID): RequestID is stored on the third byte (Byte4).
+4)	all IPs stored as four byte numbers stored in the network byte order. Note that a hostname may have multiple IP addresses. Here is the format of the response:
+Fields	lg	Cs	GID	RID	m1	IP addresses	m2	IPAddresses	……
+Size	2	1	1	1	1	m1 x 4	1	m2 x 4	
+
+The field mi indicates the number of IP addresses for Hostname n i
+
+ If the server does not resolve a hostname, it must return the IP address 255.255.255.255 (0xffffffff) for that host.
+
+A message is VALID if its checksum and length are correct. The checksum is correct if the sum of ALL  bytes composing the message (including the checksum) add up to -1 (0xff).
