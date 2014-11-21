@@ -1,7 +1,7 @@
 Final-Networks-Project
 ======================
 
-This is the third and final project from my Intro to Networking class at Auburn.
+This is the third and final project from my Intro to Networking class at Auburn using C and Python.
 
 Lab 3 Report
 COMP 4320
